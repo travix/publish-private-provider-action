@@ -2,12 +2,14 @@ import { getInput, setFailed } from "@actions/core";
 import { ArtifactPath, ArtifactType, LoadArtifacts } from "lib/artifact";
 import { Context } from "lib/github";
 import { TerraformCloudApi } from "lib/terraform-cloud";
+import { resolve } from "path";
 import { asMock } from "test-lib";
 import { describe, expect, test, vi } from "vitest";
 
 import { Inputs, main } from "../main";
 
 vi.mock("@actions/core");
+vi.mock("path");
 vi.mock("lib/artifact");
 vi.mock("lib/github");
 vi.mock("lib/terraform-cloud");
@@ -100,8 +102,9 @@ describe("main", () => {
         asMock(apiMock.CreatePlatform).mockResolvedValueOnce(undefined);
         asMock(ArtifactPath).mockReturnValueOnce("checksum1");
         asMock(ArtifactPath).mockReturnValueOnce("signature1");
+        asMock(resolve).mockReturnValueOnce("/cwd/dist1/artifacts.json");
         await main();
-        expect(LoadArtifacts).toHaveBeenCalledWith("dist1/artifacts.json");
+        expect(LoadArtifacts).toHaveBeenCalledWith("/cwd/dist1/artifacts.json");
         expect(TerraformCloudApi).toHaveBeenCalledWith("access-token1", "namespace1", "provider1", "version1");
         expect(apiMock.CreateVersion).toHaveBeenCalledWith("checksum1", "signature1", "key-id1");
         expect(apiMock.CreatePlatform).toHaveBeenCalledWith({
@@ -117,7 +120,8 @@ describe("main", () => {
             asMock(getInput).mockReturnValueOnce(input);
         }
         asMock(LoadArtifacts).mockResolvedValueOnce([]);
+        asMock(resolve).mockReturnValueOnce("/cwd/dist/artifacts.json");
         await main();
-        expect(setFailed).toHaveBeenCalledWith("No archives found in dist/artifacts.json to upload");
+        expect(setFailed).toHaveBeenCalledWith("No archives found in /cwd/dist/artifacts.json to upload");
     });
 });

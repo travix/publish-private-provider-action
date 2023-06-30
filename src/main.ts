@@ -2,6 +2,7 @@ import { debug, getInput, info, setFailed } from "@actions/core";
 import { ArtifactPath, ArtifactsJson, ArtifactType, LoadArtifacts } from "lib/artifact";
 import { Context } from "lib/github";
 import { TerraformCloudApi } from "lib/terraform-cloud";
+import { join, resolve } from "path";
 
 enum InputNames {
     DistPath = "dist-path",
@@ -58,7 +59,7 @@ export class Inputs {
 export async function main(): Promise<void> {
     try {
         const { accessToken, distPath, gpgKeyId, namespace, provider, version } = new Inputs();
-        const artifactsJson = distPath + ArtifactsJson;
+        const artifactsJson = resolve(join(distPath, ArtifactsJson));
         const artifacts = await LoadArtifacts(artifactsJson);
         const totalArchives = artifacts.filter(a => a.type === ArtifactType.Archive).length;
         if (totalArchives === 0) {

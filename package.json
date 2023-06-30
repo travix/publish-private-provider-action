@@ -8,7 +8,7 @@
   "scripts": {
     "all": "npm run format && npm run lint -- --fix && npm test -- --run && npm run build",
     "prebuild": "rm -rf dist",
-    "build": "ncc build --source-map --license licenses.txt ./src/main.ts -mo dist --target es2020",
+    "build": "ncc build ./src/main.ts -mo dist --source-map --license licenses.txt --target es2020",
     "format": "prettier --write '**/*.{ts,js,cjs,json}'",
     "format-check": "prettier --check '**/*.{ts,js,cjs,json}'",
     "lint": "eslint '**/*.ts' --cache",
