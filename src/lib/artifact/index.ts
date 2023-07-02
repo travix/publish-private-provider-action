@@ -1,6 +1,5 @@
 import { debug } from "@actions/core";
-
-export const ArtifactsJson = "/artifacts.json";
+import { promises as Fs } from "fs";
 
 export enum ArtifactType {
     Archive = "Archive",
@@ -77,8 +76,11 @@ export const ArtifactPath = (artifacts: Artifact[], type: ArtifactType): string 
     return checksum.path;
 };
 
-export const LoadArtifacts = async (artifactsJson: string): Promise<Artifact[]> => {
-    debug(`Loading artifacts from ${artifactsJson}`);
-    const jsonImport = await import(artifactsJson);
-    return jsonImport.default as Artifact[];
+export const LoadArtifacts = async (artifactsJson: string, artifactsJsonPath: string): Promise<Artifact[]> => {
+    if (artifactsJson) {
+        debug(`Loading artifacts from json input`);
+        return JSON.parse(artifactsJson);
+    }
+    debug(`Loading artifacts from ${artifactsJsonPath}`);
+    return JSON.parse(await Fs.readFile(artifactsJsonPath, "utf8"));
 };

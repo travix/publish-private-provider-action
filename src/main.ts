@@ -1,11 +1,11 @@
 import { debug, getInput, info, setFailed } from "@actions/core";
-import { ArtifactPath, ArtifactsJson, ArtifactType, LoadArtifacts } from "lib/artifact";
+import { ArtifactPath, ArtifactType, LoadArtifacts } from "lib/artifact";
 import { Context } from "lib/github";
 import { TerraformCloudApi } from "lib/terraform-cloud";
-import { join, resolve } from "path";
 
 enum InputNames {
-    DistPath = "dist-path",
+    ArtifactsJson = "artifact-json",
+    ArtifactsJsonPath = "artifact-json-path",
     GpgKeyId = "gpg-key-id",
     Namespace = "namespace",
     Provider = "provider-name",
@@ -14,7 +14,8 @@ enum InputNames {
 }
 
 export class Inputs {
-    distPath: string;
+    artifactsJson: string;
+    artifactsJsonPath: string;
     namespace: string;
     provider: string;
     accessToken: string;
@@ -22,7 +23,8 @@ export class Inputs {
     gpgKeyId?: string;
 
     constructor() {
-        this.distPath = getInput(InputNames.DistPath);
+        this.artifactsJson = getInput(InputNames.ArtifactsJson);
+        this.artifactsJsonPath = getInput(InputNames.ArtifactsJsonPath);
         this.gpgKeyId = getInput(InputNames.GpgKeyId);
         this.namespace = getInput(InputNames.Namespace);
         this.provider = getInput(InputNames.Provider);
@@ -33,10 +35,6 @@ export class Inputs {
     }
 
     private setDefaults() {
-        if (!this.distPath) {
-            this.distPath = "dist";
-            debug(`dist-path not supplied, defaulting to "dist"`);
-        }
         const context = new Context();
         if (!this.namespace) {
             this.namespace = context.repo.owner;
@@ -58,12 +56,15 @@ export class Inputs {
 
 export async function main(): Promise<void> {
     try {
-        const { accessToken, distPath, gpgKeyId, namespace, provider, version } = new Inputs();
-        const artifactsJson = resolve(join(distPath, ArtifactsJson));
-        const artifacts = await LoadArtifacts(artifactsJson);
+        const { accessToken, artifactsJson, artifactsJsonPath, gpgKeyId, namespace, provider, version } = new Inputs();
+        const artifacts = await LoadArtifacts(artifactsJson, artifactsJsonPath);
         const totalArchives = artifacts.filter(a => a.type === ArtifactType.Archive).length;
         if (totalArchives === 0) {
-            setFailed(`No archives found in ${artifactsJson} to upload`);
+            if (artifactsJson) {
+                setFailed("No archives found to upload in supplied artifact-json input");
+                return;
+            }
+            setFailed(`No archives found to upload in ${artifactsJsonPath}`);
             return;
         }
         const client = new TerraformCloudApi(accessToken, namespace, provider, version);

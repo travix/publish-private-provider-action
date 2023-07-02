@@ -54,8 +54,8 @@ describe("ArtifactPath", () => {
 });
 
 describe("LoadArtifacts", () => {
-    test("should load artifacts", async () => {
-        await expect(LoadArtifacts(__dirname + "/artifacts.test1.json")).resolves.toEqual([
+    test("should load artifacts from path", async () => {
+        await expect(LoadArtifacts("", __dirname + "/artifacts.test1.json")).resolves.toEqual([
             {
                 name: "checksum",
                 path: "checksum",
@@ -63,5 +63,8 @@ describe("LoadArtifacts", () => {
                 extra: {}
             }
         ]);
+    });
+    test("should load artifacts from json", async () => {
+        await expect(LoadArtifacts(`[]`, __dirname + "/artifacts.test1.json")).resolves.toEqual([]);
     });
 });

@@ -2,7 +2,6 @@ import { getInput, setFailed } from "@actions/core";
 import { ArtifactPath, ArtifactType, LoadArtifacts } from "lib/artifact";
 import { Context } from "lib/github";
 import { TerraformCloudApi } from "lib/terraform-cloud";
-import { resolve } from "path";
 import { asMock } from "test-lib";
 import { describe, expect, test, vi } from "vitest";
 
@@ -16,12 +15,14 @@ vi.mock("lib/terraform-cloud");
 
 describe("getInputs", () => {
     test("should return inputs", () => {
-        for (const input of ["dist1", "key-id1", "namespace1", "provider1", "access-token1", "version1"]) {
+        // prettier-ignore
+        for (const input of ["", "dist1/artifacts.json", "key-id1", "namespace1", "provider1", "access-token1", "version1"]) {
             asMock(getInput).mockReturnValueOnce(input);
         }
         const inputs = new Inputs();
         expect(inputs).toEqual({
-            distPath: "dist1",
+            artifactsJson: "",
+            artifactsJsonPath: "dist1/artifacts.json",
             gpgKeyId: "key-id1",
             namespace: "namespace1",
             provider: "provider1",
@@ -30,7 +31,7 @@ describe("getInputs", () => {
         });
     });
     test("should return inputs with defaults", () => {
-        for (const input of ["", "", "", "", "access-token1", ""]) {
+        for (const input of ["", "", "", "", "", "access-token1", ""]) {
             asMock(getInput).mockReturnValueOnce(input);
         }
         asMock(Context).mockReturnValueOnce({
@@ -44,7 +45,8 @@ describe("getInputs", () => {
         });
         const inputs = new Inputs();
         expect(inputs).toEqual({
-            distPath: "dist",
+            artifactsJson: "",
+            artifactsJsonPath: "",
             gpgKeyId: "",
             namespace: "travix",
             provider: "xyz",
@@ -69,7 +71,8 @@ describe("getInputs", () => {
 
 describe("main", () => {
     test("should upload artifacts", async () => {
-        for (const input of ["dist1", "key-id1", "namespace1", "provider1", "access-token1", "version1"]) {
+        // prettier-ignore
+        for (const input of ["", "dist1/artifacts.json", "key-id1", "namespace1", "provider1", "access-token1", "version1"]) {
             asMock(getInput).mockReturnValueOnce(input);
         }
         asMock(LoadArtifacts).mockResolvedValueOnce([
@@ -102,9 +105,8 @@ describe("main", () => {
         asMock(apiMock.CreatePlatform).mockResolvedValueOnce(undefined);
         asMock(ArtifactPath).mockReturnValueOnce("checksum1");
         asMock(ArtifactPath).mockReturnValueOnce("signature1");
-        asMock(resolve).mockReturnValueOnce("/cwd/dist1/artifacts.json");
         await main();
-        expect(LoadArtifacts).toHaveBeenCalledWith("/cwd/dist1/artifacts.json");
+        expect(LoadArtifacts).toHaveBeenCalledWith("", "dist1/artifacts.json");
         expect(TerraformCloudApi).toHaveBeenCalledWith("access-token1", "namespace1", "provider1", "version1");
         expect(apiMock.CreateVersion).toHaveBeenCalledWith("checksum1", "signature1", "key-id1");
         expect(apiMock.CreatePlatform).toHaveBeenCalledWith({
@@ -115,13 +117,21 @@ describe("main", () => {
             path: "path1"
         });
     });
-    test("should fail if no artifacts are found", async () => {
-        for (const input of ["", "", "namespace1", "provider1", "access-token1", "version1"]) {
+    test("should fail if no artifacts are found in json", async () => {
+        for (const input of ["json", "", "", "namespace1", "provider1", "access-token1", "version1"]) {
             asMock(getInput).mockReturnValueOnce(input);
         }
         asMock(LoadArtifacts).mockResolvedValueOnce([]);
-        asMock(resolve).mockReturnValueOnce("/cwd/dist/artifacts.json");
         await main();
-        expect(setFailed).toHaveBeenCalledWith("No archives found in /cwd/dist/artifacts.json to upload");
+        expect(setFailed).toHaveBeenCalledWith("No archives found to upload in supplied artifact-json input");
+    });
+
+    test("should fail if no artifacts are found in json path", async () => {
+        for (const input of ["", "some-path", "", "namespace1", "provider1", "access-token1", "version1"]) {
+            asMock(getInput).mockReturnValueOnce(input);
+        }
+        asMock(LoadArtifacts).mockResolvedValueOnce([]);
+        await main();
+        expect(setFailed).toHaveBeenCalledWith("No archives found to upload in some-path");
     });
 });
