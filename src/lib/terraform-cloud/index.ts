@@ -90,7 +90,7 @@ export class TerraformCloudApi {
                 attributes: {
                     os: os,
                     arch: arch,
-                    shasum: shasum.replace(/^"sha256:/, ""),
+                    shasum: shasum.replace(/^sha256:/, ""),
                     filename: filename
                 }
             }

@@ -105,7 +105,7 @@ describe("TerraformCloudApi", () => {
                     attributes: {
                         os: "darwin",
                         arch: "amd64",
-                        shasum: "asha256sums",
+                        shasum: "sums-value",
                         filename: "some.zip"
                     }
                 }
@@ -123,7 +123,7 @@ describe("TerraformCloudApi", () => {
         await client.CreatePlatform({
             os: "darwin",
             arch: "amd64",
-            shasum: "asha256sums",
+            shasum: "sha256:sums-value",
             filename: "some.zip",
             path: "/path1"
         });
